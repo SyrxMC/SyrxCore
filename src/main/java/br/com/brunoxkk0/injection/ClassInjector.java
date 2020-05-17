@@ -84,7 +84,7 @@ public class ClassInjector {
 
             if(file.exists()){
 
-                String Fname = file.getName(); Fname = Fname.substring(0, (Fname.length() - 19) );
+                String Fname = file.getName(); Fname = Fname.substring(0, (Fname.length() - 23) );
 
                 try {
                     addURL.invoke(classLoader, file.toURI().toURL());

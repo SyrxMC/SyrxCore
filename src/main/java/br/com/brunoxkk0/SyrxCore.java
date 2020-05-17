@@ -6,13 +6,10 @@ import br.com.brunoxkk0.helper.ReflectionInjector;
 import br.com.brunoxkk0.helper.ServerProperties;
 import br.com.brunoxkk0.helper.commands.SCommandHandler;
 import br.com.brunoxkk0.helper.events.SEventHandler;
-import org.bukkit.Bukkit;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.slf4j.Logger;
 
 
-public class SyrxCore extends JavaPlugin implements Listener {
+public class SyrxCore extends JavaPlugin{
 
     private static SyrxCore instance;
 
@@ -49,7 +46,7 @@ public class SyrxCore extends JavaPlugin implements Listener {
 
         getLoggerHelper().info("Mundo principal setado como: " + getServerProperties().getProperties("level-name"));
 
-        if(ReflectionInjector.boot()){
+        if(ReflectionInjector.boot(this.getClassLoader())){
             getLoggerHelper().info("Iniciando [Reflections - 0.9.12]");
         }
 

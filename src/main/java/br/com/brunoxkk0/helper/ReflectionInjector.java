@@ -6,18 +6,18 @@ import java.io.IOException;
 
 public class ReflectionInjector {
 
-    public static boolean boot(){
+    public static boolean boot(ClassLoader classLoader){
 
         try {
 
             Class.forName("org.reflections.Reflections");
-            return true;
 
         } catch (ClassNotFoundException e) {
 
             try {
-                new ClassInjector(ReflectionInjector.class.getClassLoader(),"reflections-0.9.10",0);
-                new ClassInjector(ReflectionInjector.class.getClassLoader(),"javassist-3.18.2-GA",0);
+
+                new ClassInjector(classLoader,"reflections-0.9.12",0);
+                new ClassInjector(classLoader,"javassist-3.26.0-GA",0);
 
                 return true;
             } catch (IOException ex) {
@@ -25,6 +25,8 @@ public class ReflectionInjector {
                 return false;
             }
         }
+
+        return true;
     }
 
 }
