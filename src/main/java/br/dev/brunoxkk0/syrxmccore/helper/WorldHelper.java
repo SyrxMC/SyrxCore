@@ -1,9 +1,9 @@
-package br.com.brunoxkk0.helper;
+package br.dev.brunoxkk0.syrxmccore.helper;
 
-import br.com.brunoxkk0.SyrxCore;
+import br.dev.brunoxkk0.syrxmccore.SyrxCore;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_12_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_7_R4.CraftWorld;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -30,6 +30,7 @@ public class WorldHelper {
     }
 
     public static Object getHandle(World world){
+
         Object handle = null;
         Method method = null;
 
@@ -43,7 +44,7 @@ public class WorldHelper {
             try{
                 handle = method.invoke(world);
             } catch (IllegalAccessException | InvocationTargetException e) {
-                SyrxCore.getLoggerHelper().warn("Error to getHandle for world " + world.getName());
+                SyrxCore.getInstance().getLogger().warning("Error to getHandle for world " + world.getName());
             }
         }
 

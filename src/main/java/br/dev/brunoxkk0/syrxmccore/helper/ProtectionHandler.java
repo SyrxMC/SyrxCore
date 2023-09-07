@@ -1,4 +1,4 @@
-package br.com.brunoxkk0.helper;
+package br.dev.brunoxkk0.syrxmccore.helper;
 
 import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.bukkit.RegionContainer;
@@ -40,12 +40,12 @@ public class ProtectionHandler {
 
             RegionContainer container = worldGuardPlugin.getRegionContainer();
             RegionQuery query = container.createQuery();
-            ApplicableRegionSet set = query.getApplicableRegions(location);
+            ApplicableRegionSet regions = query.getApplicableRegions(location);
 
             LocalPlayer localPlayer;
 
             if((localPlayer = worldGuardPlugin.wrapPlayer(player)) != null){
-                return set.allows(defaultFlag, localPlayer);
+                return regions.allows(defaultFlag, localPlayer);
             }
 
         }
