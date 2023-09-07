@@ -1,7 +1,7 @@
 name: SyrxCore
-version: 1.12.2.0
+version: 1.0.0
 description: Core plugin for syrxcraft servers.
 
 author: Brunoxkk0
 
-main: br.com.brunoxkk0.SyrxCore
+main: br.dev.brunoxkk0.syrxmccore.SyrxCore

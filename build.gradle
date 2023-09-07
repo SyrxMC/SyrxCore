@@ -1,8 +1,9 @@
 plugins {
     id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
-group 'br.com.brunoxkk0'
+group 'br.dev.brunoxkk0'
 version '1.0'
 
 sourceCompatibility = 1.8
@@ -10,16 +11,6 @@ sourceCompatibility = 1.8
 repositories {
 
     mavenCentral()
-
-    maven {
-        name = 'papermc'
-        url = 'https://papermc.io/repo/repository/maven-public/'
-    }
-
-    maven {
-        name = 'dmulloy2-repo'
-        url = 'https://repo.dmulloy2.net/nexus/repository/public/'
-    }
 
     maven {
         name = 'enginehub'
@@ -37,43 +28,80 @@ repositories {
     }
 
     maven {
-        name = 'spigotmc'
-        url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
-
-        content {
-            includeGroup 'org.bukkit'
-            includeGroup 'org.spigotmc'
-        }
-
-    }
-
-    maven {
         name = 'CodeMC'
         url = 'https://repo.codemc.io/'
     }
 
     maven {
         name = 'sk89q'
-        url = 'http://maven.sk89q.com/repo/'
+        url = 'https://maven.sk89q.com/repo/'
     }
 
 }
 
 dependencies {
 
-    compileOnly 'org.reflections:reflections:0.9.12'
+    annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2'
+    compileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2'
 
-    compileOnly 'com.destroystokyo.paper:paper-api:1.12.2-R0.1-SNAPSHOT'
-    compileOnly 'org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT'
-    compileOnly 'org.bukkit:bukkit:1.12.2-R0.1-SNAPSHOT'
-
-    compileOnly 'com.comphenix.protocol:ProtocolLib:4.5.0'
+    annotationProcessor 'org.projectlombok:lombok:1.18.28'
+    compileOnly 'org.projectlombok:lombok:1.18.28'
 
     compileOnly 'com.sk89q.worldedit:worldedit-bukkit:6.1.5'
     compileOnly 'com.sk89q.worldguard:worldguard-legacy:6.2'
 
     compileOnly 'com.github.MilkBowl:VaultAPI:1.7'
 
-    compile fileTree(dir: 'craftbukkit', include: '*.jar')
+    compileOnly 'com.github.CrucibleMC:Crucible:81fcb90bad'
 
+    implementation 'org.reflections:reflections:0.10.2'
+    implementation 'com.electronwill.night-config:hocon:3.6.0'
+
+    implementation 'org.slf4j:slf4j-nop:1.7.32'
+
+
+}
+
+configure([tasks.compileJava]) {
+    sourceCompatibility = 16 // for the IDE support
+    options.release = 8
+    options.encoding = 'UTF-8'
+
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(16)
+    }
+}
+
+
+compileJava.options.encoding = 'UTF-8'
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+processResources {
+    def props = [version: version]
+    inputs.properties props
+    filteringCharset 'UTF-8'
+    filesMatching('plugin.yml') {
+        expand props
+    }
+}
+
+shadowJar {
+
+    relocate("org.slf4j.nop",                   "org.slf4j.nop")
+
+    relocate("com.electronwill.nightconfig",    "br.dev.brunoxkk0.syrxmccore.libs.com.electronwill.nightconfig")
+    relocate("com.typesafe",                    "br.dev.brunoxkk0.syrxmccore.libs.com.typesafe")
+    relocate("javassist",                       "br.dev.brunoxkk0.syrxmccore.libs.javassist")
+    relocate("javax",                           "br.dev.brunoxkk0.syrxmccore.libs.javax")
+    relocate("org.reflections",                 "br.dev.brunoxkk0.syrxmccore.libs.org.reflections")
+    relocate("org.apache",                      "br.dev.brunoxkk0.syrxmccore.libs.org.apache")
+    relocate("org.slf4j",                       "br.dev.brunoxkk0.syrxmccore.libs.org.slf4j")
+
+    archiveClassifier.set('')
+}
+
+build {
+    dependsOn(shadowJar)
 }
