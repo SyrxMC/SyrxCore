@@ -34,11 +34,16 @@ public class CommandManager implements CommandExecutor {
     }
 
 
-    private static final HashSet<String> targetPackages = new HashSet<>();
+    private static final HashMap<String, ClassLoader> targetPackages = new HashMap<>();
 
     public static void packagesRegister(String target) {
         if (target != null && !target.isEmpty())
-            targetPackages.add(target);
+            targetPackages.put(target, Thread.currentThread().getContextClassLoader());
+    }
+
+    public static void packagesRegister(String target, ClassLoader classLoader) {
+        if (target != null && !target.isEmpty())
+            targetPackages.put(target, classLoader);
     }
 
     public static void packagesUnregister(String target) {
@@ -53,8 +58,8 @@ public class CommandManager implements CommandExecutor {
 
         ConfigurationBuilder configurationManager = new ConfigurationBuilder();
 
-        for (String pkg : targetPackages) {
-            configurationManager = configurationManager.forPackage(pkg);
+        for (Map.Entry<String, ClassLoader> pkg : targetPackages.entrySet()) {
+            configurationManager = configurationManager.forPackage(pkg.getKey(), pkg.getValue());
         }
 
         Reflections reflections = new Reflections(configurationManager);

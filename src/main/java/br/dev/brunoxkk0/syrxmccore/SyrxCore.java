@@ -31,7 +31,7 @@ public class SyrxCore extends JavaPlugin {
     public void onEnable() {
 
         getLogger().info("Ativando Modulo [Comandos]");
-        CommandManager.packagesRegister("br.dev.brunoxkk0.syrxmccore");
+        CommandManager.packagesRegister("br.dev.brunoxkk0.syrxmccore", this.getClass().getClassLoader());
         Bukkit.getScheduler().runTask(this, (commandManager = CommandManager.getInstance()).register());
 
     }
