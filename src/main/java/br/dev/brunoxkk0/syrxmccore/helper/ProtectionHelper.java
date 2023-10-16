@@ -10,17 +10,17 @@ import com.sk89q.worldguard.protection.flags.StateFlag;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
-public class ProtectionHandler {
+public class ProtectionHelper {
 
-    private static ProtectionHandler protectionHandler;
+    private static ProtectionHelper protectionHelper;
     private static WorldGuardPlugin worldGuardPluginInstance;
 
-    public static ProtectionHandler getProtectionHandler() {
-        return (protectionHandler != null) ? protectionHandler : new ProtectionHandler();
+    public static ProtectionHelper getProtectionHandler() {
+        return (protectionHelper != null) ? protectionHelper : new ProtectionHelper();
     }
 
-    private ProtectionHandler(){
-        protectionHandler = this;
+    private ProtectionHelper(){
+        protectionHelper = this;
 
         if((worldGuardPluginInstance = WorldGuardPlugin.inst()) == null){
             throw new NullPointerException();

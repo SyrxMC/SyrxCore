@@ -33,7 +33,6 @@ public class CommandManager implements CommandExecutor {
         instance = this;
     }
 
-
     private static final HashMap<String, ClassLoader> targetPackages = new HashMap<>();
 
     public static void packagesRegister(String target) {
@@ -53,6 +52,13 @@ public class CommandManager implements CommandExecutor {
 
 
     private final LinkedHashMap<Command, Object> COMMANDS = new LinkedHashMap<>();
+    private final LinkedHashMap<String, CompleteSupplier> COMPLETE_SUPPLIERS = new LinkedHashMap<>();
+
+
+    public void registerCompleteSupplier(String key, CompleteSupplier completeSupplier){
+        COMPLETE_SUPPLIERS.put(key, completeSupplier);
+    }
+
 
     private void mapCommands() {
 
@@ -91,6 +97,9 @@ public class CommandManager implements CommandExecutor {
         SyrxCore.getInstance().getLogger().info("[CommandManager] » Found " + COMMANDS.size() + " command(s).");
 
         registerCommands();
+        registerDefaultSuppliers();
+
+        SyrxCore.getInstance().getLogger().info("[CommandManager] » Found " + COMPLETE_SUPPLIERS.size() + " complete suppliers.");
 
     }
 
@@ -143,8 +152,8 @@ public class CommandManager implements CommandExecutor {
         }
     }
 
-    public static boolean noPermission(CommandSender sender) {
-        sender.sendMessage("§c[CommandHandler] » You don't have permission to execute this action.");
+    public static boolean noPermission(CommandSender sender, String permission) {
+        sender.sendMessage(String.format("§c[CommandHandler] » You don't have permission to execute this action. [§f{%s}§c].", permission));
         return true;
     }
 
@@ -153,21 +162,22 @@ public class CommandManager implements CommandExecutor {
         return true;
     }
 
-
     @Override
     public boolean onCommand(CommandSender commandSender, org.bukkit.command.Command command, String label, String[] strings) {
 
-        Command cmd = COMMANDS.keySet().stream().filter(commandObjectEntry -> commandObjectEntry.command().equalsIgnoreCase(command.getName())).findFirst().orElse(null);
+        Command cmd = COMMANDS.keySet().stream().filter(
+                commandObjectEntry -> commandObjectEntry.command().equalsIgnoreCase(command.getName())
+        ).findFirst().orElse(null);
 
         if (cmd != null) {
 
             if (!cmd.consoleEnable() && (commandSender instanceof ConsoleCommandSender))
                 return playerOnly(commandSender);
 
-            Player player = (Player) commandSender;
-
-            if (!player.hasPermission(cmd.permission()))
-                return noPermission(player);
+            if (commandSender instanceof Player player) {
+                if (!player.hasPermission(cmd.permission()))
+                    return noPermission(player, cmd.permission());
+            }
 
             CommandExecutable commandExecutable = (CommandExecutable) COMMANDS.get(cmd);
             commandExecutable.execute(new CommandContext(commandSender, label, strings));
@@ -190,7 +200,7 @@ public class CommandManager implements CommandExecutor {
 
     public TabCompleter tabCompleter(Command command) {
 
-        return (commandSender, cmd, s, strings) -> {
+        return (commandSender, cmd, label, args) -> {
 
             if (commandSender instanceof Player player)
                 if (!player.hasPermission(command.permission()))
@@ -209,74 +219,30 @@ public class CommandManager implements CommandExecutor {
 
             int currentPos;
 
-            if (strings == null || strings.length == 0)
+            if (args == null || args.length == 0)
                 currentPos = 0;
             else
-                currentPos = strings.length - 1;
+                currentPos = args.length - 1;
 
             if (currentPos + 1 > tokens.length)
                 return Collections.emptyList();
 
-            String token = tokens[currentPos].toLowerCase().replaceAll("<", "").replaceAll(">", "");
+            String token = tokens[currentPos].toLowerCase().replaceAll("[<>]", "");
+
             Stream<String> stream = Stream.empty();
 
-            if (token.equals("player"))
-                stream = Bukkit.getOnlinePlayers().stream().map(HumanEntity::getName).filter(el -> match(el, currentPos, strings));
+            CompleteSupplier completeSupplier;
 
-            if (token.equals("offline_player"))
-                stream = Arrays.stream(Bukkit.getOfflinePlayers()).map(OfflinePlayer::getName).filter(el -> match(el, currentPos, strings));
+            if(token.contains("|"))
+                completeSupplier = COMPLETE_SUPPLIERS.get("|");
+            else
+                completeSupplier = COMPLETE_SUPPLIERS.get(token);
 
-            if (token.equals("item"))
-                stream = Arrays.stream(Material.values()).map(el -> el.toString().toLowerCase()).filter(el -> match(el, currentPos, strings));
-
-            if (token.equals("biome"))
-                stream = Arrays.stream(Biome.values()).map(el -> el.toString().toLowerCase()).filter(el -> match(el, currentPos, strings));
-
-            if (token.equals("world"))
-                stream = Bukkit.getWorlds().stream().map(World::getName).filter(el -> match(el, currentPos, strings));
-
-            if (token.equals("particle"))
-                stream = Arrays.stream(Particle.values()).map(el -> el.toString().toLowerCase()).filter(el -> match(el, currentPos, strings));
-
-            if (token.equals("entity"))
-                stream = Arrays.stream(EntityType.values()).map(el -> el.toString().toLowerCase()).filter(el -> match(el, currentPos, strings));
-
-            if (token.equals("gamemode"))
-                stream = Arrays.stream(GameMode.values()).map(el -> el.toString().toLowerCase()).filter(el -> match(el, currentPos, strings));
-
-            if (token.contains("|")) {
-                stream = Arrays.stream(token.split("\\|"));
-            }
-
-            if (token.equals("x")) {
-
-                int x = 0;
-                if (commandSender instanceof Player player) {
-                    x = player.getLocation().getBlockX();
-                }
-
-                stream = Stream.of(String.valueOf(x));
-            }
-
-            if (token.equals("y")) {
-
-                int y = 100;
-                if (commandSender instanceof Player player) {
-                    y = player.getLocation().getBlockY();
-                }
-
-
-                stream = Stream.of(String.valueOf(y));
-            }
-
-            if (token.equals("z")) {
-
-                int z = 0;
-                if (commandSender instanceof Player player) {
-                    z = player.getLocation().getBlockZ();
-                }
-
-                stream = Stream.of(String.valueOf(z));
+            try {
+                if (completeSupplier != null)
+                    stream = completeSupplier.generateHint(commandSender, cmd, label, currentPos, token, args);
+            } catch (Exception exception) {
+                SyrxCore.getInstance().getLogger().warning("Fail to calculate tab complete. Ex:" + exception.getMessage());
             }
 
             List<String> list = stream.collect(Collectors.toList());
@@ -285,7 +251,90 @@ public class CommandManager implements CommandExecutor {
         };
     }
 
-    private boolean match(String element, int pos, String[] data) {
+    private void registerDefaultSuppliers() {
+
+        COMPLETE_SUPPLIERS.put("player", ((sender, command, label, currentPos, token, args) ->
+                Bukkit.getOnlinePlayers().stream().map(HumanEntity::getName).filter(el ->
+                        isPartialMatch(el, currentPos, args)
+                ))
+        );
+
+        COMPLETE_SUPPLIERS.put("offline_player", ((sender, command, label, currentPos, token, args) ->
+                Arrays.stream(Bukkit.getOfflinePlayers()).map(OfflinePlayer::getName).filter(el ->
+                        isPartialMatch(el, currentPos, args)
+                ))
+        );
+
+        COMPLETE_SUPPLIERS.put("item", ((sender, command, label, currentPos, token, args) ->
+                Arrays.stream(Material.values()).map(el -> el.toString().toLowerCase()).filter(el ->
+                        isPartialMatch(el, currentPos, args)
+                ))
+        );
+
+        COMPLETE_SUPPLIERS.put("biomes", ((sender, command, label, currentPos, token, args) ->
+                Arrays.stream(Biome.values()).map(el -> el.toString().toLowerCase()).filter(el ->
+                        isPartialMatch(el, currentPos, args)
+                ))
+        );
+
+        COMPLETE_SUPPLIERS.put("world", ((sender, command, label, currentPos, token, args) ->
+                Bukkit.getWorlds().stream().map(World::getName).filter(el ->
+                        isPartialMatch(el, currentPos, args)
+                ))
+        );
+
+        COMPLETE_SUPPLIERS.put("particle", ((sender, command, label, currentPos, token, args) ->
+                Arrays.stream(Particle.values()).map(el -> el.toString().toLowerCase()).filter(el ->
+                        isPartialMatch(el, currentPos, args)
+                ))
+        );
+
+        COMPLETE_SUPPLIERS.put("entity", ((sender, command, label, currentPos, token, args) ->
+                Arrays.stream(EntityType.values()).map(el -> el.toString().toLowerCase()).filter(el ->
+                        isPartialMatch(el, currentPos, args)
+                ))
+        );
+
+        COMPLETE_SUPPLIERS.put("game_mode", ((sender, command, label, currentPos, token, args) ->
+                Arrays.stream(GameMode.values()).map(el -> el.toString().toLowerCase()).filter(el ->
+                        isPartialMatch(el, currentPos, args)
+                ))
+        );
+
+        COMPLETE_SUPPLIERS.put("x", ((sender, command, label, currentPos, token, args) ->
+                getLocation(sender).map(value ->
+                        Stream.of(String.valueOf(value.getBlockX()))).orElseGet(() -> Stream.of(String.valueOf(0))
+                ))
+        );
+
+        COMPLETE_SUPPLIERS.put("y", ((sender, command, label, currentPos, token, args) ->
+                getLocation(sender).map(value ->
+                        Stream.of(String.valueOf(value.getBlockY()))).orElseGet(() -> Stream.of(String.valueOf(0))
+                ))
+        );
+
+        COMPLETE_SUPPLIERS.put("z", ((sender, command, label, currentPos, token, args) ->
+                getLocation(sender).map(value ->
+                        Stream.of(String.valueOf(value.getBlockZ()))).orElseGet(() -> Stream.of(String.valueOf(0))
+                ))
+        );
+
+        COMPLETE_SUPPLIERS.put("|", ((sender, command, label, currentPos, token, args) ->
+                Arrays.stream(token.split("\\|"))
+        ));
+
+    }
+
+    private Optional<Location> getLocation(CommandSender commandSender){
+
+        if(commandSender instanceof Player player){
+            return Optional.of(player.getLocation());
+        }
+
+        return Optional.empty();
+    }
+
+    private boolean isPartialMatch(String element, int pos, String[] data) {
 
         if (data != null) {
             if (pos <= data.length - 1) {

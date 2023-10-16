@@ -1,6 +1,9 @@
 package br.dev.brunoxkk0.syrxmccore.core.commands;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 import org.bukkit.command.CommandSender;
 
 @Getter

@@ -1,5 +1,7 @@
 package br.dev.brunoxkk0.syrxmccore.core;
 
+import br.dev.brunoxkk0.syrxmccore.SyrxCore;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
@@ -19,7 +21,7 @@ public class ServerProperties {
         try {
             properties.load(new FileInputStream("server.properties"));
         } catch (IOException e) {
-            e.printStackTrace();
+            SyrxCore.getInstance().getLogger().info("Unable to load server.properties file.");
         }
     }
 
