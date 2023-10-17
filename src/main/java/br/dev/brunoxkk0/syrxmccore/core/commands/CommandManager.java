@@ -169,7 +169,7 @@ public class CommandManager implements CommandExecutor {
     public static Map<String, org.bukkit.command.Command> getCommandMapKnownCommands() {
         CommandMap commandMap = getCommandMap();
         try {
-            Field field = Bukkit.getPluginManager().getClass().getDeclaredField("knownCommands");
+            Field field = commandMap.getClass().getDeclaredField("knownCommands");
             field.setAccessible(true);
             //noinspection unchecked
             return (Map<String, org.bukkit.command.Command>) field.get(commandMap);
