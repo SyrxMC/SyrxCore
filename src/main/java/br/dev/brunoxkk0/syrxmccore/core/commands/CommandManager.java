@@ -2,6 +2,8 @@ package br.dev.brunoxkk0.syrxmccore.core.commands;
 
 
 import br.dev.brunoxkk0.syrxmccore.SyrxCore;
+import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.*;
 import org.bukkit.block.Biome;
 import org.bukkit.command.*;
@@ -55,7 +57,11 @@ public class CommandManager implements CommandExecutor {
     private final LinkedHashMap<String, CompleteSupplier> COMPLETE_SUPPLIERS = new LinkedHashMap<>();
 
 
-    public void registerCompleteSupplier(String key, CompleteSupplier completeSupplier){
+    @Getter
+    @Setter
+    public static boolean verbosePermissions = false;
+
+    public void registerCompleteSupplier(String key, CompleteSupplier completeSupplier) {
         COMPLETE_SUPPLIERS.put(key, completeSupplier);
     }
 
@@ -113,7 +119,12 @@ public class CommandManager implements CommandExecutor {
 
             for (Command command : COMMANDS.keySet()) {
 
-                PluginCommand pluginCommand = pluginCommandConstructor.newInstance(command.command(), SyrxCore.getInstance());
+                Plugin plugin = Arrays.stream(Bukkit.getPluginManager().getPlugins())
+                        .filter(pl -> pl.getClass().equals(command.plugin()))
+                        .findAny()
+                        .orElse(SyrxCore.getInstance());
+
+                PluginCommand pluginCommand = pluginCommandConstructor.newInstance(command.command(), plugin);
 
                 pluginCommand.setExecutor(this);
 
@@ -137,23 +148,95 @@ public class CommandManager implements CommandExecutor {
         }
     }
 
+    private static CommandMap commandMap = null;
+
+    public static CommandMap getCommandMap() {
+
+        if (commandMap == null) {
+            try {
+                Field commandMapField = Bukkit.getPluginManager().getClass().getDeclaredField("commandMap");
+                commandMapField.setAccessible(true);
+
+                commandMap = (CommandMap) commandMapField.get(Bukkit.getPluginManager());
+            } catch (Exception e) {
+                SyrxCore.getInstance().getLogger().warning("[CommandHandler] » Failed to instantiate the command map.");
+            }
+        }
+
+        return commandMap;
+    }
+
+    public static Map<String, org.bukkit.command.Command> getCommandMapKnownCommands() {
+        CommandMap commandMap = getCommandMap();
+        try {
+            Field field = Bukkit.getPluginManager().getClass().getDeclaredField("knownCommands");
+            field.setAccessible(true);
+            //noinspection unchecked
+            return (Map<String, org.bukkit.command.Command>) field.get(commandMap);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     public void registerOnBukkit(PluginCommand command) {
+
         try {
 
-            Field commandMapField = Bukkit.getPluginManager().getClass().getDeclaredField("commandMap");
-            commandMapField.setAccessible(true);
+            unregisterCommand(command.getLabel(), command.getPlugin());
 
-            CommandMap commandMap = (CommandMap) commandMapField.get(Bukkit.getPluginManager());
+            for (String alias : command.getAliases())
+                unregisterCommand(alias, command.getPlugin());
 
-            commandMap.register(command.getPlugin().getName().toLowerCase(), command);
-
+            getCommandMap().register(command.getPlugin().getName().toLowerCase(), command);
         } catch (Exception e) {
             SyrxCore.getInstance().getLogger().info("[CommandHandler] » Failed to register commands on bukkit. Command name: " + command.getName() + ", command class: " + command.getClass().getName() + ".");
+        }
+
+    }
+
+    public static void unregisterCommand(String commandName, Plugin notifyPlugin) {
+
+        try {
+
+            Map<String, org.bukkit.command.Command> mapOfCommands = getCommandMapKnownCommands();
+            org.bukkit.command.Command existingCommand = mapOfCommands.get(commandName);
+
+            if (existingCommand == null) {
+                return; //Command is not registered
+            }
+
+            mapOfCommands.remove(commandName);
+
+            String originalPlugin = "BUKKIT";
+            if (existingCommand instanceof PluginIdentifiableCommand pluginIdentifiableCommand) {
+
+                Plugin plugin = pluginIdentifiableCommand.getPlugin();
+
+                if (plugin != null) {
+                    originalPlugin = "Plugin: " + plugin.getName();
+                }
+
+            }
+
+            if (commandName.equals(existingCommand.getName())) {
+                notifyPlugin.getLogger().warning("Removing existent command [" + existingCommand.getName() + "] from " + originalPlugin + "!");
+            } else {
+                notifyPlugin.getLogger().warning("Removing existent alias (" + commandName + ") for [" + existingCommand.getName() + "] from " + originalPlugin + "!");
+            }
+
+        } catch (Exception e) {
+            SyrxCore.getInstance().getLogger().warning("Failed to UNREGISTER command [" + commandName + "] Message: " + e.getMessage());
         }
     }
 
     public static boolean noPermission(CommandSender sender, String permission) {
-        sender.sendMessage(String.format("§c[CommandHandler] » You don't have permission to execute this action. [§f{%s}§c].", permission));
+        String message = "§c[CommandHandler] » You don't have permission to execute this action.";
+
+        if (verbosePermissions)
+            message += String.format(" §c[§f{%s}§c].", permission);
+
+        sender.sendMessage(message);
         return true;
     }
 
@@ -171,7 +254,7 @@ public class CommandManager implements CommandExecutor {
 
         if (cmd != null) {
 
-            if (!cmd.consoleEnable() && (commandSender instanceof ConsoleCommandSender))
+            if (cmd.playerOnly() && (commandSender instanceof ConsoleCommandSender))
                 return playerOnly(commandSender);
 
             if (commandSender instanceof Player player) {
@@ -206,7 +289,7 @@ public class CommandManager implements CommandExecutor {
                 if (!player.hasPermission(command.permission()))
                     return Collections.emptyList();
 
-            if ((commandSender instanceof ConsoleCommandSender) && !command.consoleEnable())
+            if ((commandSender instanceof ConsoleCommandSender) && command.playerOnly())
                 return Collections.emptyList();
 
             String usage = cmd.getUsage();
@@ -233,7 +316,7 @@ public class CommandManager implements CommandExecutor {
 
             CompleteSupplier completeSupplier;
 
-            if(token.contains("|"))
+            if (token.contains("|"))
                 completeSupplier = COMPLETE_SUPPLIERS.get("|");
             else
                 completeSupplier = COMPLETE_SUPPLIERS.get(token);
@@ -325,9 +408,9 @@ public class CommandManager implements CommandExecutor {
 
     }
 
-    private Optional<Location> getLocation(CommandSender commandSender){
+    private Optional<Location> getLocation(CommandSender commandSender) {
 
-        if(commandSender instanceof Player player){
+        if (commandSender instanceof Player player) {
             return Optional.of(player.getLocation());
         }
 

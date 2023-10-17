@@ -1,5 +1,5 @@
 name: SyrxCore
-version: 1.0.0
+version: ${version}
 description: Core plugin for syrxcraft servers.
 
 author: Brunoxkk0

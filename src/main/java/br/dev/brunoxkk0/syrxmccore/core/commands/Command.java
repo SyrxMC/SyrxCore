@@ -19,7 +19,7 @@ public @interface Command {
 
     String permission() default "";
 
-    boolean consoleEnable() default true;
+    boolean playerOnly() default false;
 
     String usage() default "";
 
