@@ -5,6 +5,7 @@ import com.electronwill.nightconfig.core.conversion.ObjectConverter;
 import com.electronwill.nightconfig.core.conversion.Path;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 
 import java.io.File;
@@ -51,11 +52,14 @@ public class ConfigFactory {
 
                 return obj;
 
-            } else {
+            }
 
-                for (Field field : Arrays.stream(obj.getClass().getDeclaredFields()).filter(field ->
-                        field.isAnnotationPresent(Path.class)
-                ).collect(Collectors.toList())) {
+            if(!fileConfig.contains("file_version") || fileConfig.getLong("file_version") != obj.configVersion){
+
+                for (Field field : obj.getClass().getFields()) {
+
+                    if(!field.isAnnotationPresent(Path.class))
+                        continue;
 
                     Path pt = field.getAnnotation(Path.class);
 
@@ -72,12 +76,14 @@ public class ConfigFactory {
 
                 }
 
+                fileConfig.set("file_version", obj.configVersion);
+
                 syncComments(fileConfig, config);
 
                 fileConfig.save();
                 fileConfig.load();
 
-                logger.info("The file " + file.getPath() + " is a valid configuration, but is outdated, config was updated with the default values.");
+                logger.info("The file " + file.getPath() + " is outdated. The file was updated with the default values for the new fields.");
             }
 
             objectConverter.toObject(fileConfig, obj);
@@ -90,7 +96,7 @@ public class ConfigFactory {
 
     private static void syncComments(CommentedFileConfig config, Class<?> source) {
 
-        for (Field field : source.getDeclaredFields()) {
+        for (Field field : source.getFields()) {
             if (field.isAnnotationPresent(Path.class) && field.isAnnotationPresent(Comment.class)) {
 
                 Path path = field.getAnnotation(Path.class);
@@ -111,6 +117,11 @@ public class ConfigFactory {
 
         private transient java.nio.file.Path configPath;
         private transient CommentedFileConfig config;
+
+        @Path("config_version")
+        @Comment("This field is used to manage the config version. !DON'T MODIFY!")
+        @Setter
+        public long configVersion = 1;
 
     }
 
