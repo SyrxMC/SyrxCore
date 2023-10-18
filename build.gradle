@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'br.dev.brunoxkk0'
-version '1.0.6'
+version '1.0.6a'
 
 sourceCompatibility = 1.8
 

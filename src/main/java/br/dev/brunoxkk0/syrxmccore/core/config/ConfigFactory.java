@@ -11,6 +11,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class ConfigFactory {
 
@@ -54,7 +55,7 @@ public class ConfigFactory {
 
                 for (Field field : Arrays.stream(obj.getClass().getDeclaredFields()).filter(field ->
                         field.isAnnotationPresent(Path.class)
-                ).toList()) {
+                ).collect(Collectors.toList())) {
 
                     Path pt = field.getAnnotation(Path.class);
 
