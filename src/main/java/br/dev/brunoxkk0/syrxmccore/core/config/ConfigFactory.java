@@ -9,6 +9,7 @@ import lombok.SneakyThrows;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 public class ConfigFactory {
@@ -38,16 +39,44 @@ public class ConfigFactory {
 
             T obj = ReflectionUtils.createInstance(config);
 
-            if (fileConfig.isEmpty()) {
+            ((PathConfig) obj).configPath = path;
+            ((PathConfig) obj).config = fileConfig;
 
-                ((PathConfig) obj).configPath = path;
-                ((PathConfig) obj).config = fileConfig;
+            if (fileConfig.isEmpty()) {
 
                 objectConverter.toConfig(obj, fileConfig);
                 syncComments(fileConfig, config);
                 fileConfig.save();
 
                 return obj;
+
+            } else {
+
+                for (Field field : Arrays.stream(obj.getClass().getDeclaredFields()).filter(field ->
+                        field.isAnnotationPresent(Path.class)
+                ).toList()) {
+
+                    Path pt = field.getAnnotation(Path.class);
+
+                    try {
+                        if (fileConfig.get(pt.value()) == null && field.get(obj) != null) {
+                            fileConfig.set(pt.value(), field.get(obj));
+                        }
+                    } catch (Exception exception) {
+                        logger.warning("An error occurs when updated the config " + file.getPath() +
+                                " { Field: " + field.getName() + ", Path: " + pt.value() + " } Message: " +
+                                exception.getMessage()
+                        );
+                    }
+
+                }
+
+                syncComments(fileConfig, config);
+
+                fileConfig.save();
+                fileConfig.load();
+
+                logger.info("The file " + file.getPath() + " is a valid configuration, but is outdated, config was updated with the default values.");
             }
 
             objectConverter.toObject(fileConfig, obj);
