@@ -10,9 +10,7 @@ import lombok.SneakyThrows;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 public class ConfigFactory {
 
@@ -54,11 +52,11 @@ public class ConfigFactory {
 
             }
 
-            if(!fileConfig.contains("file_version") || fileConfig.getLong("file_version") != obj.configVersion){
+            if (!fileConfig.contains("file_version") || fileConfig.getLong("file_version") != obj.configVersion) {
 
                 for (Field field : obj.getClass().getFields()) {
 
-                    if(!field.isAnnotationPresent(Path.class))
+                    if (!field.isAnnotationPresent(Path.class))
                         continue;
 
                     Path pt = field.getAnnotation(Path.class);
@@ -97,6 +95,7 @@ public class ConfigFactory {
     private static void syncComments(CommentedFileConfig config, Class<?> source) {
 
         for (Field field : source.getFields()) {
+
             if (field.isAnnotationPresent(Path.class) && field.isAnnotationPresent(Comment.class)) {
 
                 Path path = field.getAnnotation(Path.class);
@@ -107,6 +106,7 @@ public class ConfigFactory {
                 }
 
             }
+
         }
 
     }
@@ -124,6 +124,5 @@ public class ConfigFactory {
         public long configVersion = 1;
 
     }
-
 
 }
