@@ -422,7 +422,7 @@ public class CommandManager implements CommandExecutor {
         if (data != null) {
             if (pos <= data.length - 1) {
                 String target = data[pos];
-                return target.isEmpty() || element.startsWith(data[pos]);
+                return target.isEmpty() || element.toLowerCase().startsWith(target.toLowerCase());
             }
         }
 
