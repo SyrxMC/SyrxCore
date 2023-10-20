@@ -45,6 +45,10 @@ public class ConfigFactory {
             if (fileConfig.isEmpty()) {
 
                 objectConverter.toConfig(obj, fileConfig);
+
+                fileConfig.set("file_version", obj.getFileVersion());
+                fileConfig.setComment("file_version", "This field is used to manage the config version. !DON'T MODIFY!");
+
                 syncComments(fileConfig, config);
                 fileConfig.save();
 
@@ -52,7 +56,7 @@ public class ConfigFactory {
 
             }
 
-            if (!fileConfig.contains("file_version") || fileConfig.getLong("file_version") != obj.configVersion) {
+            if (!fileConfig.contains("file_version") || fileConfig.getLong("file_version") != obj.getFileVersion()) {
 
                 for (Field field : obj.getClass().getFields()) {
 
@@ -74,7 +78,7 @@ public class ConfigFactory {
 
                 }
 
-                fileConfig.set("file_version", obj.configVersion);
+                fileConfig.set("file_version", obj.getFileVersion());
 
                 syncComments(fileConfig, config);
 
@@ -118,10 +122,7 @@ public class ConfigFactory {
         private transient java.nio.file.Path configPath;
         private transient CommentedFileConfig config;
 
-        @Path("config_version")
-        @Comment("This field is used to manage the config version. !DON'T MODIFY!")
-        @Setter
-        public long configVersion = 1;
+        public abstract long getFileVersion();
 
     }
 
