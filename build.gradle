@@ -99,7 +99,7 @@ shadowJar {
     relocate("com.electronwill.nightconfig",    "br.dev.brunoxkk0.syrxmccore.libs.com.electronwill.nightconfig")
     relocate("com.typesafe",                    "br.dev.brunoxkk0.syrxmccore.libs.com.typesafe")
     relocate("javassist",                       "br.dev.brunoxkk0.syrxmccore.libs.javassist")
-    relocate("javax",                           "br.dev.brunoxkk0.syrxmccore.libs.javax")
+    relocate("javax.annotation ",               "br.dev.brunoxkk0.syrxmccore.libs.javax.annotation")
     relocate("org.reflections",                 "br.dev.brunoxkk0.syrxmccore.libs.org.reflections")
     relocate("org.apache",                      "br.dev.brunoxkk0.syrxmccore.libs.org.apache")
     relocate("org.slf4j",                       "br.dev.brunoxkk0.syrxmccore.libs.org.slf4j")
