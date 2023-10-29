@@ -5,7 +5,6 @@ import com.electronwill.nightconfig.core.conversion.ObjectConverter;
 import com.electronwill.nightconfig.core.conversion.Path;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.SneakyThrows;
 
 import java.io.File;
